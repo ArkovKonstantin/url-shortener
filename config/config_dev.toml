@@ -1,0 +1,19 @@
+[SQLDataBase]
+Server = "localhost"
+Database = "url_shortener"
+User = "postgres"
+Password = "12345"
+ApplicationName = "url_shortener"
+MaxIdleConns  = 2
+MaxOpenConns = 2
+ConnMaxLifetime = "5m"
+Port = 5433
+
+[ServerOpt]
+ReadTimeout = "5s"
+WriteTimeout = "5s"
+IdleTimeout = "5s"
+
+[Application]
+Host = "localhost"
+Port = 9000
