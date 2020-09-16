@@ -12,6 +12,8 @@ services:
       POSTGRES_PASSWORD: "12345"
   web:
     build: .
+    environment:
+      ENV: "prod"
     command: ./main
     restart: always
     depends_on:

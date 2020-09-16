@@ -2,14 +2,13 @@ package models
 
 import (
 	"github.com/BurntSushi/toml"
-	"io/ioutil"
-	"strings"
+	"os"
 	"time"
 )
 
 var (
-	configPath = "config/config_dev.toml"
-	hashPaths  = []string{configPath}
+	devConfigPath  = "config/config.dev.toml"
+	prodConfigPath = "config/config.prod.toml"
 )
 
 type duration time.Duration
@@ -54,18 +53,17 @@ type ServerOpt struct {
 }
 
 // LoadConfig from path
-func LoadConfig(c *Config) {
-	_, err := toml.DecodeFile(configPath, c)
-	if err != nil {
-		return
+func LoadConfig(c *Config) error {
+	env := os.Getenv("ENV")
+	var p string
+	if env == "" || env == "dev" {
+		p = devConfigPath
+	} else if env == "prod" {
+		p = prodConfigPath
 	}
-	// c.SQLDataBase.User = getCredential("/etc/scrt/chat-server/sqlUser")
-	// c.SQLDataBase.Password = getCredential("/etc/scrt/chat-server/sqlPassword")
-
-}
-
-func getCredential(path string) string {
-	hashPaths = append(hashPaths, path)
-	c, _ := ioutil.ReadFile(path)
-	return strings.TrimSpace(string(c))
+	_, err := toml.DecodeFile(p, c)
+	if err != nil {
+		return err
+	}
+	return nil
 }
