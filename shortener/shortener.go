@@ -28,10 +28,12 @@ func (s *shortener) AddURL(url string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "get db connection err:")
 	}
+
 	tx, err := db.Begin()
 	if err != nil {
 		return "", errors.Wrap(err, "begin tx err:")
 	}
+
 	var id int
 	var name, shortURL string
 	{
@@ -77,14 +79,13 @@ func (s *shortener) AddURLWithName(url, name string) error {
 	if err != nil {
 		return errors.Wrap(err, "get db connection err:")
 	}
-	result, err := db.Exec("INSERT INTO url (url, name) VALUES($1, $2)", url, name)
 
+	result, err := db.Exec("INSERT INTO url (url, name) VALUES($1, $2)", url, name)
 	if err != nil {
 		return errors.Wrap(err, "insert operation err:")
 	}
 
 	_, err = result.RowsAffected()
-
 	if err != nil {
 		return errors.Wrap(err, "rowsAffected operation err:")
 	}
@@ -98,10 +99,9 @@ func (s *shortener) GetURLByName(name string) (string, error) {
 		return "", errors.Wrap(err, "get db connection err:")
 	}
 
-	row := db.QueryRow("SELECT url FROM url WHERE name = ($1)", name)
 	var url string
+	row := db.QueryRow("SELECT url FROM url WHERE name = ($1)", name)
 	err = row.Scan(&url)
-
 	if err != nil {
 		return "", err
 	}
