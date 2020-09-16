@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	configPath = "config/config.toml"
+	configPath = "config/config_dev.toml"
 	hashPaths  = []string{configPath}
 )
 

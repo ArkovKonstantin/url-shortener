@@ -1,7 +1,6 @@
 package shortener
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 )
@@ -45,7 +44,7 @@ func convertBase(val string, base, toBase int) (string, error) {
 	}
 }
 
-func main() {
-	s, _ := convertBase("10000023423", 10, 66)
-	fmt.Println(s)
-}
+//func main() {
+//	s, _ := convertBase("10000023423", 10, 66)
+//	fmt.Println(s)
+//}

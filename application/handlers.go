@@ -1,12 +1,14 @@
 package application
 
 import (
-	"encoding/json"
+	"database/sql"
 	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
-	"io/ioutil"
 	"net/http"
-	"url-shortener/models"
+)
+
+const (
+	errorURLNotFound = "url does not exists"
+	errorDuplicateName = "url with this name already exists"
 )
 
 func (app *Application) HealthHandler(w http.ResponseWriter, r *http.Request) {
@@ -14,62 +16,54 @@ func (app *Application) HealthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) ShortenHandler(w http.ResponseWriter, r *http.Request) {
-	b, err := ioutil.ReadAll(r.Body)
+	req, err := decodeShortenReq(r)
 	if err != nil {
-		http.Error(
-			w,
-			errors.Wrap(err, "reading request").Error(),
-			http.StatusBadRequest,
-		)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
-	var u models.URL
-	err = json.Unmarshal(b, &u)
+	u, err := app.rep.AddURL(req.URL)
 	if err != nil {
-		http.Error(
-			w,
-			errors.Wrap(err, "unmarshal request data").Error(),
-			http.StatusBadRequest,
-		)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	shortURL, err := app.rep.Add(u.URL)
+	if err := encodeResponse(w, ShortenResponse{u}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (app *Application) CreateHandler(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeCreateReq(r)
 	if err != nil {
-		http.Error(
-			w,
-			err.Error(),
-			http.StatusInternalServerError,
-		)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	b, err = json.Marshal(ShortenResponse{shortURL})
-	if err != nil {
-		http.Error(
-			w,
-			errors.Wrap(err, "marshal response err").Error(),
-			http.StatusInternalServerError,
-		)
+
+	_ , err = app.rep.GetURLByName(req.Name)
+	if err == sql.ErrNoRows {
+		err := app.rep.AddURLWithName(req.URL, req.Name)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
-	w.Write(b)
+	http.Error(w, errorDuplicateName, http.StatusBadRequest)
 }
 
 func (app *Application) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	longURL, err := app.rep.GetURL(vars["short_url"])
-	if err != nil {
-		http.Error(
-			w,
-			err.Error(),
-			http.StatusInternalServerError,
-		)
+	url, err := app.rep.GetURLByName(vars["name"])
+
+	if err == sql.ErrNoRows {
+		http.Error(w, errorURLNotFound, http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, longURL, http.StatusMovedPermanently)
-}
-
-type ShortenResponse struct {
-	ShortURL string `json:"short_url"`
+	http.Redirect(w, r, url, http.StatusMovedPermanently)
 }

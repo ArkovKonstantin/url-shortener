@@ -1,7 +1,6 @@
 package shortener
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/pkg/errors"
 	"strconv"
@@ -10,8 +9,9 @@ import (
 )
 
 type Shortener interface {
-	Add(string) (string, error)
-	GetURL(string) (string, error)
+	AddURL(string) (string, error)
+	AddURLWithName(string, string) error
+	GetURLByName(string) (string, error)
 }
 
 type shortener struct {
@@ -23,7 +23,7 @@ func NewShortenerRepository(p provider.Provider, appCfg *models.Application) Sho
 	return &shortener{p, appCfg}
 }
 
-func (s *shortener) Add(longURL string) (string, error) {
+func (s *shortener) AddURL(url string) (string, error) {
 	db, err := s.p.GetConn()
 	if err != nil {
 		return "", errors.Wrap(err, "get db connection err:")
@@ -33,32 +33,31 @@ func (s *shortener) Add(longURL string) (string, error) {
 		return "", errors.Wrap(err, "begin tx err:")
 	}
 	var id int
-	var shortURL string
+	var name, shortURL string
 	{
-		stmt, err := tx.Prepare("INSERT INTO url (long_url) VALUES ($1) RETURNING id")
+		stmt, err := tx.Prepare("INSERT INTO url (url) VALUES ($1) RETURNING id")
 		if err != nil {
 			tx.Rollback()
 			return "", errors.Wrap(err, "tx prepare err:")
 		}
 		defer stmt.Close()
-		err = stmt.QueryRow(longURL).Scan(&id)
+		err = stmt.QueryRow(url).Scan(&id)
 		if err != nil {
 			return "", errors.Wrap(err, "insert operation err:")
 		}
 	}
 	{
-		stmt, err := tx.Prepare("UPDATE  url SET short_url = ($1) where id = ($2)")
+		stmt, err := tx.Prepare("UPDATE url SET name = ($1) where id = ($2)")
 		if err != nil {
 			tx.Rollback()
 			return "", errors.Wrap(err, "tx prepare err:")
 		}
 		defer stmt.Close()
-		num, err := convertBase(strconv.Itoa(id), 10, 66)
+		name, err = convertBase(strconv.Itoa(id), 10, 66)
 		if err != nil {
-			return "", errors.Wrap(err, "convert id to base 66 num err:")
+			return "", errors.Wrap(err, "convert id to short_url err:")
 		}
-		shortURL = fmt.Sprintf("http://%s:%d/%s", s.appCfg.Host, s.appCfg.Port, num)
-		if _, err := stmt.Exec(num, id); err != nil {
+		if _, err := stmt.Exec(name, id); err != nil {
 			tx.Rollback()
 			return "", errors.Wrap(err, "update operation err:")
 		}
@@ -68,21 +67,44 @@ func (s *shortener) Add(longURL string) (string, error) {
 		return "", errors.Wrap(err, "commit err:")
 	}
 
+	shortURL = fmt.Sprintf("http://%s:%d/%s", s.appCfg.Host, s.appCfg.Port, name)
+
 	return shortURL, nil
 }
 
-func (s *shortener) GetURL(path string) (string, error) {
+func (s *shortener) AddURLWithName(url, name string) error {
+	db, err := s.p.GetConn()
+	if err != nil {
+		return errors.Wrap(err, "get db connection err:")
+	}
+	result, err := db.Exec("INSERT INTO url (url, name) VALUES($1, $2)", url, name)
+
+	if err != nil {
+		return errors.Wrap(err, "insert operation err:")
+	}
+
+	_, err = result.RowsAffected()
+
+	if err != nil {
+		return errors.Wrap(err, "rowsAffected operation err:")
+	}
+
+	return nil
+}
+
+func (s *shortener) GetURLByName(name string) (string, error) {
 	db, err := s.p.GetConn()
 	if err != nil {
 		return "", errors.Wrap(err, "get db connection err:")
 	}
-	row := db.QueryRow("SELECT long_url FROM url WHERE short_url = ($1)", path)
-	var longURL string
-	err = row.Scan(&longURL)
-	if err == sql.ErrNoRows {
-		return "", errors.Wrap(err, "Not Found")
-	} else if err != nil {
-		return "", errors.Wrap(err, "select operation err:")
+
+	row := db.QueryRow("SELECT url FROM url WHERE name = ($1)", name)
+	var url string
+	err = row.Scan(&url)
+
+	if err != nil {
+		return "", err
 	}
-	return longURL, nil
+
+	return url, nil
 }
