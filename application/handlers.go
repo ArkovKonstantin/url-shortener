@@ -3,6 +3,7 @@ package application
 import (
 	"database/sql"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 )
 
@@ -34,6 +35,7 @@ func (app *Application) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 func (app *Application) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	req, err := decodeCreateReq(r)
 	if err != nil {
+		log.Println("decode err", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -42,15 +44,18 @@ func (app *Application) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	if err == sql.ErrNoRows {
 		err := app.rep.AddURLWithName(req.URL, req.Name)
 		if err != nil {
+			log.Println("add operation err", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
 		return
 	} else if err != nil {
+		log.Println("get operation err", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Println("duplicate err")
 	http.Error(w, errorDuplicateName, http.StatusBadRequest)
 }
 
