@@ -61,7 +61,7 @@ _Responses:_
 ### Нагрузочное тестирование
 Нагрузочное тестирование было проведено при помощи фреймворка [Locust](https://locust.io/). <br>
 Для проведения тестов, необходимо описать сценарий в файле locustfile.py и запустить модуль командой `locust -f locustfile.py`. Затем результаты тестирования можно наблюдать на графиках в веб-интерфейсе или таблице результатов в консоли. <br>
-Ниже приведен листинг файла locustfile.py
+Ниже приведен листинг файла `locustfile.py` <br>
 Сценарий проведения теста: <br>
 * Методом `shorten` было сгенерировано 5000 записей в базе данных.
 * Далее был запущен метод `redirect`, с нагрузкой 1000 одновременных чтений
@@ -107,5 +107,8 @@ class WebsiteUser(HttpUser):
 
 ```
 ![Image](https://github.com/ArkovKonstantin/url-shortener/raw/master/assets/total_requests_per_second.png) <br>
+Среднее число обрабатываемых запросов в секунду составило 150 при нагрузке 1000 одновременных чтений.
 ![Image](https://github.com/ArkovKonstantin/url-shortener/raw/master/assets/response_times_(ms).png) <br>
+Желтый график - это 95% percentil
+Зеленый график - это среднее время ответа, кторое составило 4,5 - 4,7 сек.
 ![Image](https://github.com/ArkovKonstantin/url-shortener/raw/master/assets/number_of_users.png) <br>
