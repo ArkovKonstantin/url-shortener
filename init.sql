@@ -5,3 +5,5 @@ create table url
     name       varchar unique,
     created_at timestamptz default now()
 );
+
+create index on url(name);
