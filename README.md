@@ -106,9 +106,15 @@ class WebsiteUser(HttpUser):
     wait_time = between(1, 2)
 
 ```
+Среднее число обрабатываемых запросов в секунду составило 150 при нагрузке 1000 одновременных чтений. <br>
+
 ![Image](https://github.com/ArkovKonstantin/url-shortener/raw/master/assets/total_requests_per_second.png) <br>
-Среднее число обрабатываемых запросов в секунду составило 150 при нагрузке 1000 одновременных чтений.
+
+* Желтый график - это 95% percentil
+* Зеленый график - это среднее время ответа, кторое составило 4,5 - 4,7 сек.
+
 ![Image](https://github.com/ArkovKonstantin/url-shortener/raw/master/assets/response_times_(ms).png) <br>
-Желтый график - это 95% percentil
-Зеленый график - это среднее время ответа, кторое составило 4,5 - 4,7 сек.
+
+Число пользователей <br>
+
 ![Image](https://github.com/ArkovKonstantin/url-shortener/raw/master/assets/number_of_users.png) <br>
